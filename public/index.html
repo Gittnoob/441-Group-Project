@@ -1,13 +1,183 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Express</title>
-  <link rel="stylesheet" href="/stylesheets/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Second-Hand Trading Platform</title>
+  <link rel="stylesheet" href="/stylesheets/style.css" />
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; }
+    h1 { color: #333; }
+    nav { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    nav button { padding: .4rem .9rem; cursor: pointer; }
+    section { display: none; }
+    section.active { display: block; }
+    .card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin: .5rem 0; }
+    .card h3 { margin: 0 0 .3rem; }
+    label { display: block; margin-top: .5rem; font-size: .9rem; }
+    input, textarea, select { width: 100%; padding: .4rem; margin-top: .2rem; box-sizing: border-box; }
+    button[type=submit] { margin-top: .8rem; padding: .5rem 1.2rem; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    #status-bar { background: #f0f0f0; padding: .4rem .8rem; border-radius: 4px; margin-bottom: 1rem; font-size: .9rem; }
+    .search-bar { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .search-bar input { flex: 1; }
+    #message { color: green; margin: .5rem 0; }
+    #error-msg { color: red; margin: .5rem 0; }
+  </style>
 </head>
-
 <body>
-  <h1>Express</h1>
-  <p>Welcome to Express</p>
-</body>
+  <h1>Second-Hand Trading Platform</h1>
+  <div id="status-bar">Not logged in</div>
+  <div id="message"></div>
+  <div id="error-msg"></div>
 
+  <nav>
+    <button onclick="show('browse')">Browse Listings</button>
+    <button onclick="show('sell')">Post a Listing</button>
+    <button onclick="show('login')">Login</button>
+    <button onclick="show('register')">Register</button>
+    <button onclick="logout()">Logout</button>
+  </nav>
+
+  <!-- Browse -->
+  <section id="browse" class="active">
+    <h2>Available Items</h2>
+    <div class="search-bar">
+      <input id="search-input" placeholder="Search by keyword…" />
+      <select id="cat-filter">
+        <option value="">All Categories</option>
+        <option>Electronics</option><option>Furniture</option>
+        <option>Books</option><option>Clothing</option><option>Other</option>
+      </select>
+      <button onclick="loadListings()">Search</button>
+    </div>
+    <div id="listings-container">Loading…</div>
+  </section>
+
+  <!-- Post listing -->
+  <section id="sell">
+    <h2>Post a New Listing</h2>
+    <form id="listing-form">
+      <label>Title *<input name="name" required /></label>
+      <label>Description<textarea name="description" rows="3"></textarea></label>
+      <label>Price ($) *<input name="price" type="number" min="0" step="0.01" required /></label>
+      <label>Category
+        <select name="category">
+          <option>Electronics</option><option>Furniture</option>
+          <option>Books</option><option>Clothing</option><option>Other</option>
+        </select>
+      </label>
+      <label>Quantity<input name="quantity" type="number" min="1" value="1" /></label>
+      <button type="submit">Post Listing</button>
+    </form>
+  </section>
+
+  <!-- Login -->
+  <section id="login">
+    <h2>Login</h2>
+    <form id="login-form">
+      <label>Email *<input name="email" type="email" required /></label>
+      <label>Password *<input name="password" type="password" required /></label>
+      <button type="submit">Login</button>
+    </form>
+  </section>
+
+  <!-- Register -->
+  <section id="register">
+    <h2>Register</h2>
+    <form id="register-form">
+      <label>Username *<input name="username" required /></label>
+      <label>Email *<input name="email" type="email" required /></label>
+      <label>Password *<input name="password" type="password" required /></label>
+      <button type="submit">Create Account</button>
+    </form>
+  </section>
+
+  <script>
+    // ── helpers ────────────────────────────────────────────────────────────────
+    async function api(method, path, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      return res.json();
+    }
+    function msg(text, err = false) {
+      document.getElementById(err ? 'error-msg' : 'message').textContent = text;
+      document.getElementById(err ? 'message' : 'error-msg').textContent = '';
+    }
+    function show(id) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id === 'browse') loadListings();
+    }
+
+    // ── auth status ────────────────────────────────────────────────────────────
+    async function checkStatus() {
+      const data = await api('GET', '/auth/status');
+      const bar = document.getElementById('status-bar');
+      bar.textContent = data.user ? `Logged in as ${data.user.username}` : 'Not logged in';
+    }
+
+    async function logout() {
+      await api('POST', '/auth/logout');
+      msg('Logged out.');
+      checkStatus();
+    }
+
+    // ── listings ───────────────────────────────────────────────────────────────
+    async function loadListings() {
+      const q = document.getElementById('search-input').value.trim();
+      const cat = document.getElementById('cat-filter').value;
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (cat) params.set('category', cat);
+      const endpoint = q ? `/api/listings/search?${params}` : `/api/listings?${params}`;
+      const data = await api('GET', endpoint);
+      const items = data.items || [];
+      const container = document.getElementById('listings-container');
+      if (!items.length) { container.innerHTML = '<p>No listings found.</p>'; return; }
+      container.innerHTML = items.map(item => `
+        <div class="card">
+          <h3>${item.name} — $${item.price.toFixed(2)}</h3>
+          <p><strong>Category:</strong> ${item.category} &nbsp;|&nbsp; <strong>Qty:</strong> ${item.quantity}</p>
+          <p>${item.description || ''}</p>
+          <p><em>Seller: ${item.seller_id?.username || 'Unknown'}</em></p>
+        </div>`).join('');
+    }
+
+    // ── forms ──────────────────────────────────────────────────────────────────
+    document.getElementById('listing-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = Object.fromEntries(fd.entries());
+      const data = await api('POST', '/api/listings', body);
+      if (data.error) { msg(data.error, true); return; }
+      msg('Listing posted!');
+      e.target.reset();
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const data = await api('POST', '/auth/login', Object.fromEntries(fd.entries()));
+      if (data.error) { msg(data.error, true); return; }
+      msg(`Welcome back, ${data.user.username}!`);
+      checkStatus();
+      show('browse');
+    });
+
+    document.getElementById('register-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const data = await api('POST', '/auth/register', Object.fromEntries(fd.entries()));
+      if (data.error) { msg(data.error, true); return; }
+      msg(`Account created! Welcome, ${data.user.username}.`);
+      checkStatus();
+      show('browse');
+    });
+
+    // ── init ───────────────────────────────────────────────────────────────────
+    checkStatus();
+    loadListings();
+  </script>
+</body>
 </html>
