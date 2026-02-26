@@ -1,13 +1,55 @@
-<html>
-
+<!DOCTYPE html>
 <head>
-  <title>Express</title>
-  <link rel="stylesheet" href="/stylesheets/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Second-Hand Trading Platform</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <script src="javascripts/index.js"></script>
 </head>
-
 <body>
-  <h1>Express</h1>
-  <p>Welcome to Express</p>
-</body>
 
+    <header>
+        <div class="logo">Second-Hand Trading Platform</div>
+        <button id="login-btn" onclick="toggleLogin()">Log in</button>
+    </header>
+
+    <div class="container" id="product-list">
+    </div>
+
+    <!-- <button class="fab" onclick="openModal()">➕</button> -->
+
+    <div class="action-group">
+        <button class="btn-round btn-cart" onclick="openCart()">
+            🛒 <span class="badge" id="cart-badge">0</span>
+        </button>
+        <button class="btn-round btn-post" onclick="openModal()">+</button>
+    </div>
+
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Confirm</h3>
+            <div id="cart-list" style="max-height: 200px; overflow-y: auto;">
+                </div>
+            <div class="total-area">
+                Total: <span class="price" id="cart-total">$0</span>
+            </div>
+            <button class="confirm-btn" onclick="pay()">Pay now</button>
+            <button onclick="closeModal()" style="width:100%; background:none; border:none; margin-top:8px; color:#999;">cancel</button>
+        </div>
+    </div>
+
+    
+
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <h3></h3>
+            <input type="text" id="p-title" placeholder="product name">
+            <input type="number" id="p-price" placeholder="price">
+            <input type="text" id="p-img" placeholder="image link">
+            <textarea id="p-desc" rows="3" placeholder="description"></textarea>
+            <button class="submit-btn" onclick="addProduct()">publish</button>
+            <button style="background:none; border:none; color:gray; width:100%; margin-top:10px; cursor:pointer;" onclick="closeModal()">cancel</button>
+        </div>
+    </div>
+</body>
 </html>
