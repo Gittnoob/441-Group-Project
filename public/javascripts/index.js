@@ -84,7 +84,23 @@ async function loadListings() {
         <p><strong>Category:</strong> ${item.category} &nbsp;|&nbsp; <strong>Qty:</strong> ${item.quantity}</p>
         <p>${item.description || ''}</p>
         <p><em>Seller: ${item.seller_id?.username || 'Unknown'}</em></p>
+        <button class="add-to-cart-btn" onclick="addToCart('${item._id}')">
+            ➕ Add to Cart
+        </button>
     </div>`).join('');
+}
+
+async function addToCart(itemId) {
+    const data=await fetch(`/users/addToWatchList?itemId=${itemId}`,{method:'PUT'})
+    if(data.error)
+    {
+        msg(data.error,true)
+        return 
+    }
+    else
+    {
+        msg("add to your shopping cart auccessfully")
+    }
 }
 
 async function loadUserInformation() {
@@ -93,36 +109,59 @@ async function loadUserInformation() {
     const container = document.getElementById('basic-info')
     container.innerHTML = `
     <h3>Basic Information</h3>
-    <input type="text" defaultValue=${data.bio} placeholder="" />
-    <input type="text" defaultValue=${data.location} placeholder="" />
-    <button onClick="updateProfile()">保存修改</button>
+    <h4>username </h4><span>${data.username}</span>
+    <h4>email </h4><span>${data.email}</span>
+    <h4>biography</h4><input type="text" value="${data.bio}" placeholder="" />
+    <h4>your location</h4><input type="text" value="${data.location}" placeholder="" />
+    <h4>your balance</h4><input type="number" value=${data.balance} placeholder="" />
+    <button onClick="updateProfile()" disabled>save</button>
     `
     const itemList = await Promise.all(data.watchlist.map(async (item)=>{
-    return (await api('GET',`api/listings/${item}`))
+    return (await api('GET',`api/listings/${item}`)).item
     }))
-    const itemTable = itemList.map((item)=>{
-        `
-        <div key=${item._id} className="item-card">
-        <span>${item.name} - ${item.price}</span>
-        
-        <div className="qty-controls">
-            <button onClick={() => handleQtyChange(item._id, -1)}>-</button>
-            <span>{quantities[item._id] || 1}</span>
-            <button onClick={() => handleQtyChange(item._id, 1)}>+</button>
-        </div>
-        <button className="delete-btn" onClick={() => removeFromWatchlist(item._id)}>
-            Delete
-        </button>
-        </div>`
-    })
+
+    let tableHtml = `
+    <table class="cart-table">
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Seller</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    itemList.forEach(item => {
+        tableHtml += `
+        <tr id="row-${item._id}">
+            <td>${item.name}</td>
+            <td>${item.category}</td>
+            <td>$${item.price}</td>
+            <td>${item.seller_id.username}</td>
+            <td>
+                <button class="del-btn" onclick="removeFromCart('${item._id}')" disabled>Remove</button>
+            </td>
+        </tr>
+        `;
+    });
+
+    tableHtml += `</tbody></table>`;
+
     const container1 = document.getElementById('watchlist')
     container1.innerHTML = `
-    <h3>My Collection</h3>
-    ${itemTable}
-    <button className="buy-btn" onClick={() => buyItem(item._id, quantities[item._id] || 1)}>
-    Buy
-    </button>
+    <h3>Shopping Cart</h3>
+    ${tableHtml}
+    <button className="buy-btn"} disabled>Buy</button>
     `      
+
+    const container2 = document.getElementById('orders')
+    container2.innerHTML='<h3>Your Orders</h3>Todo add get order api'
+    // const orderList = await Promise.all(data.orders.map(async (item)=>{
+    // return (await api('GET',`api/listings/${item}`)).item
+    // }))
 
 }
 

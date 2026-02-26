@@ -23,6 +23,24 @@
     .search-bar input { flex: 1; }
     #message { color: green; margin: .5rem 0; }
     #error-msg { color: red; margin: .5rem 0; }
+    .add-to-cart-btn {
+        background-color: #28a745; /* 绿色表示增加 */
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.3s;
+    }
+
+    .add-to-cart-btn:hover {
+        background-color: #218838;
+    }
+
+    .add-to-cart-btn:active {
+        transform: scale(0.95); /* 点击时的微小反馈 */
+    }
   </style>
 </head>
 <body>
