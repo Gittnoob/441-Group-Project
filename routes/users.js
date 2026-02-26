@@ -11,21 +11,61 @@ router.get('/', requireLogin,async function(req, res, next) {
   res.json(user)
 });
 
-router.put('/addToWatchList', requireLogin,async function(req, res, next) {
+// router.put('/addToWatchList', requireLogin,async function(req, res, next) {
+//   try{
+//     console.log(req.query.itemId)
+//     await req.models.User.findByIdAndUpdate(req.session.userId,
+//     {
+//       $addToSet: {watchlist: req.query.itemId}
+//     }
+//   );
+//   res.json({})
+//   } catch(error) {
+//     console.log(error)
+//     res.json({
+//       error: "something wrong"
+//     })
+//   }
+// });
+
+router.get('/updateProfile',requireLogin,async(req,res,next)=>{
   try{
-    console.log(req.query.itemId)
     await req.models.User.findByIdAndUpdate(req.session.userId,
-    {
-      $addToSet: {watchlist: req.query.itemId}
-    }
-  );
-  res.json({})
+      {
+        $set: {
+          bio: req.query.bio,
+          location: req.query.location,
+          balance: req.query.balance
+        }
+      }
+    )
+    res.json({})
   } catch(error) {
-    console.log(error)
-    res.json({
-      error: "something wrong"
-    })
+    res.status(500).json({error:error})
   }
-});
+})
+
+router.delete('/deleteItem',requireLogin,async(req,res,next)=>{
+  try {
+    await req.models.User.findByIdAndUpdate(
+      req.session.userId,
+      {
+        $pull: {watchlist: req.query.itemId}
+      }
+    )
+    await req.models.Item.findByIdAndDelete(req.query.itemId)
+    res.json({})
+  } catch(error){
+    res.status(500).json({error:error})
+  }
+})
+
+router.get('/orders',requireLogin,async(req,res,next)=>{
+  try {
+    ;
+  } catch(error) {
+    res.status(500).json({error:error})
+  }
+})
 
 export default router;

@@ -79,6 +79,53 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.post('/buy',async(req,res)=>{
+    try {
+        const item = await req.models.Item.findOne({_id: req.query.itemId,quantity:{$gt: 0}})
+        if(!item)
+        {
+            throw(new Error('out of stock'))
+        }
+        const user=await req.models.User.findOneAndUpdate(
+            {
+                _id: req.session.userId,
+                balance: {$gte: item.price}
+            },
+            {
+                $inc: {balance: -item.price}
+            }
+        )
+        if(!user)
+        {
+            throw(new Error('Insufficient balance'))
+        }
+        const order=await req.models.Order.create({
+            buyer_id: req.session.userId,
+            seller_id: item.seller_id,
+            item_id: item._id,
+            quantity: 1,
+            transaction_total: item.price,
+            status: 'completed'
+        })
+        item.quantity-=1
+        item.save()
+        await req.models.User.findByIdAndUpdate(
+            {
+                _id: item.seller_id
+            },
+            {
+                $inc: {balance: item.price},
+                $push: {orders: order._id}
+            }
+        )
+        user.orders.push(order._id)
+        user.save()
+        res.json({})
+    } catch(err) {
+        res.status(500).json({error: err.message})
+    }
+})
+
 /**
  * POST /api/listings
  * Body: { name, description, price, category, images[], quantity }
@@ -98,6 +145,10 @@ router.post('/', requireLogin, async (req, res) => {
             quantity: quantity !== undefined ? Number(quantity) : 1,
             seller_id: req.session.userId,
         });
+        await req.models.User.findByIdAndUpdate(
+            req.session.userId,
+            {$push:{watchlist: item._id}}
+        )
         res.status(201).json({ item });
     } catch (err) {
         console.error(err);

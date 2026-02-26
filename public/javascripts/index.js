@@ -85,13 +85,14 @@ async function loadListings() {
         <p>${item.description || ''}</p>
         <p><em>Seller: ${item.seller_id?.username || 'Unknown'}</em></p>
         <button class="add-to-cart-btn" onclick="addToCart('${item._id}')">
-            ➕ Add to Cart
+            Buy now
         </button>
     </div>`).join('');
 }
 
 async function addToCart(itemId) {
-    const data=await fetch(`/users/addToWatchList?itemId=${itemId}`,{method:'PUT'})
+    let data=await fetch(`/api/listings/buy?itemId=${itemId}`,{method:'POST'})
+    data=await data.json()
     if(data.error)
     {
         msg(data.error,true)
@@ -99,7 +100,36 @@ async function addToCart(itemId) {
     }
     else
     {
-        msg("add to your shopping cart auccessfully")
+        msg("Payment completed")
+    }
+}
+
+async function updateProfile()
+{
+    const bio=document.getElementById("userBio").value;
+    const location=document.getElementById("userLocation").value;
+    const balance=document.getElementById("userBalance").value;
+    const data=await fetch(`/users/updateProfile?bio=${bio}&location=${location}&balance=${balance}`)
+    if(data.error)
+    {
+        msg(data.error,true)
+    }
+    else
+    {
+        msg("Your Profile uploaded successfully")
+    }
+}
+async function removeFromCart(itemId)
+{
+    const data=await fetch(`/users/deleteItem?itemId=${itemId}`,{method:'DELETE'})
+    if(data.error)
+    {
+        msg(data.error,true)
+    }
+    else
+    {
+        loadUserInformation()
+        msg("Your Profile uploaded successfully")
     }
 }
 
@@ -111,10 +141,10 @@ async function loadUserInformation() {
     <h3>Basic Information</h3>
     <h4>username </h4><span>${data.username}</span>
     <h4>email </h4><span>${data.email}</span>
-    <h4>biography</h4><input type="text" value="${data.bio}" placeholder="" />
-    <h4>your location</h4><input type="text" value="${data.location}" placeholder="" />
-    <h4>your balance</h4><input type="number" value=${data.balance} placeholder="" />
-    <button onClick="updateProfile()" disabled>save</button>
+    <h4>biography</h4><input type="text" id="userBio" value="${data.bio}" placeholder="" />
+    <h4>your location</h4><input type="text" id="userLocation" value="${data.location}" placeholder="" />
+    <h4>your balance</h4><input type="number" id="userBalance" value=${data.balance} placeholder="" />
+    <button onClick="updateProfile()">save</button>
     `
     const itemList = await Promise.all(data.watchlist.map(async (item)=>{
     return (await api('GET',`api/listings/${item}`)).item
@@ -127,7 +157,6 @@ async function loadUserInformation() {
                 <th>Item Name</th>
                 <th>Category</th>
                 <th>Price</th>
-                <th>Seller</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -140,9 +169,8 @@ async function loadUserInformation() {
             <td>${item.name}</td>
             <td>${item.category}</td>
             <td>$${item.price}</td>
-            <td>${item.seller_id.username}</td>
             <td>
-                <button class="del-btn" onclick="removeFromCart('${item._id}')" disabled>Remove</button>
+                <button class="del-btn" onclick="removeFromCart('${item._id}')">Remove</button>
             </td>
         </tr>
         `;
@@ -152,9 +180,8 @@ async function loadUserInformation() {
 
     const container1 = document.getElementById('watchlist')
     container1.innerHTML = `
-    <h3>Shopping Cart</h3>
+    <h3>Your items on sale</h3>
     ${tableHtml}
-    <button className="buy-btn"} disabled>Buy</button>
     `      
 
     const container2 = document.getElementById('orders')
