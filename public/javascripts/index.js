@@ -185,10 +185,42 @@ async function loadUserInformation() {
     `      
 
     const container2 = document.getElementById('orders')
-    container2.innerHTML='<h3>Your Orders</h3>Todo add get order api'
-    // const orderList = await Promise.all(data.orders.map(async (item)=>{
-    // return (await api('GET',`api/listings/${item}`)).item
-    // }))
+    let orders = await fetch('/users/orders')
+    console.log(orders)
+    orders=(await orders.json()).orders
+    console.log(orders)
+    
+    let htmlStr=`<h3>Your Orders</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Item ID</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+           
+    `
+
+    orders.forEach(order => {
+        const date = new Date(order.created_date).toLocaleDateString();
+        htmlStr += `
+            <tr>
+                <td>#${order._id.slice(-6)}</td> <td>${order.item_id}</td>
+                <td>${order.quantity}</td>
+                <td>$${order.transaction_total.toFixed(2)}</td>
+                <td><span class="badge status-${order.status}">${order.status}</span></td>
+                <td>${date}</td>
+            </tr>
+        `;
+    });
+    htmlStr+=`</tbody>
+    </table>`
+    container2.innerHTML=htmlStr
 
 }
 

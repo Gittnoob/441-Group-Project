@@ -62,7 +62,16 @@ router.delete('/deleteItem',requireLogin,async(req,res,next)=>{
 
 router.get('/orders',requireLogin,async(req,res,next)=>{
   try {
-    ;
+    const user=await req.models.User.findById(req.session.userId)
+    const orders=await Promise.all(
+      user.orders.map(async(item)=>{
+        return await req.models.Order.findById(item)
+      })
+    )
+    console.log("orders",orders)
+    res.json({
+      orders: orders
+    })
   } catch(error) {
     res.status(500).json({error:error})
   }
